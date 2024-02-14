@@ -1,0 +1,138 @@
+# 1. Create a new project from scratch
+
+## Introduction
+
+There are two main options available for you to create a new automation project based on this archetype.
+
+1. (**RECOMMENDED**) Generate a clean and customized project from the Maven archetype.
+2. (**NOT RECOMMENDED**) Clone the archetype repository and make the needed modifications for your project to work.
+
+If you generate a clean project, you will end up with fully functional test automation project. In this section, we will explain how to do this step by step and the actions needed to build complete CICD in Test pipelines.
+
+If you clone the project directly, you will have to make some changes to existing files, renaming some parameters and modifying some configurations. We will also explain in detail which changes are required for you to have it fully customized and running without issues.
+
+We **recommend you to use the first option**, as we will focus our efforts in next releases on evolving the archetype, to make it more flexible (regarding dependencies adapated to your needs) and easier to set up.
+
+## 1. Generating a clean project from Maven Archetype
+
+### 1.1. Requirements
+
+- OpenJDK 1.8.x
+    - For Windows, [**RedHat OpenJDK 1.8.0_2xx**](https://developers.redhat.com/products/openjdk/download) is the recommended version to use at adidas.
+    - For MacOS, **any OpenJDK 1.8.x** package will do the job. If you don't have any installed, [**AdoptOpenJDK**](https://github.com/AdoptOpenJDK/homebrew-openjdk) is really easy to install using ***brew***.
+
+            $ brew tap AdoptOpenJDK/openjdk
+            $ brew install --cask adoptopenjdk8
+
+- [Maven 3.6.x](https://maven.apache.org/download.cgi)
+
+### 1.2. Configuring Maven
+
+We need to configure adidas Artifactory repository in order to make Maven find our **tpAdidasSerenity-archetype**.
+
+- Locate ***settings.xml*** file inside ***conf*** folder in your Maven installation path.
+- Edit ***settings.xml*** file adding the following:
+  - Add a new profile inside **profiles** section:
+
+        <profile>
+            <id>adidaspea</id>
+            <repositories>
+                <repository>
+                    <id>adidas-artifactory</id>
+                    <name>adidas Artifactory</name>
+                    <url>https://tools.adidas-group.com/artifactory/pea</url>
+                </repository>
+            </repositories>
+        </profile>
+  - Add the following lines inside **settings** section to activate the profile you just added:
+
+        <activeProfiles>
+            <activeProfile>adidaspea</activeProfile>
+        </activeProfiles>
+- Save your changes. Now we are ready to generate a new project from the archetype located in our adidas Artifactory repository.
+
+### 1.3. Generating the project from IntelliJ
+
+- Go to ***File*** menu and click on ***Create*** - ***New*** - ***Project***.
+- Check ***Create from archetype*** option.
+- Click on ***Add Archetype*** and fill in the following fields:
+  - GroupId: **com.adidas**
+  - ArtifactId: **tpAdidasSerenity-archetype**
+  - Version: **21.03.1** (or latest available, you can check on [**adidas Artifactory the versions available**](https://tools.adidas-group.com/artifactory/webapp/#/artifacts/browse/tree/General/pea/com/adidas/tpAdidasSerenity-archetype/21.03.1)).
+  
+  ![Artifactory](../images/01-CreateNewProject-Artifactory.png)
+
+![Create new project 01](../images/01-CreateNewProject-01.png)
+
+- Click ***OK*** and the new defined archetype will be added to list of available ones.
+- Select the newly added archetype and click on ***Next***.
+
+![Create new project 02](../images/01-CreateNewProject-02.png)
+
+- Name your automation project.
+- Type your groupId.
+- Type the version that will be for you the first.
+- Click on ***Next***.
+
+![Create new project 03](../images/01-CreateNewProject-03.png)
+
+- **IMPORTANT!** We have to override our user settings files and local repository in order to allow Maven to find our archetype in adidas Artifactory.
+- Check ***Override*** on both settings and type the path to your Maven installation configuration folder.
+- Click on ***Finish***.
+
+![Create new project 04](../images/01-CreateNewProject-04.png)
+
+- **Done!** If all OK, archetype will be downloaded from adidas Artifactory and a new project will be created. You now have a fully functional Test Automation solution ready to use.
+
+![Create new project 05](../images/01-CreateNewProject-05.png)
+
+### 1.4. Generating the project from command line
+
+**IMPORTANT!** Step 1.2 (Maven configuration) must be completed in order to allow adidas Repository to be found.
+
+- Go to the root folder you want your new project to be generated.
+- Execute the following command modifying the values of the parameters ***-DgroupId***, ***-DartifactId*** and ***-Dversion*** per your convenience.
+
+    mvn archetype:generate -DarchetypeGroupId='com.adidas' -DarchetypeArtifactId='tpAdidasSerenity-archetype' -DarchetypeVersion='21.03.1' -DgroupId='com.adidas' -DartifactId='myProject' -Dversion='0.0.1'
+
+- **Done!** If all OK, archetype will be downloaded from adidas Artifactory and a new project will be created. You now have a fully functional Test Automation solution ready to use.
+
+![Create new project - Powershell](../images/01-CreateNewProject-Powershell.png)
+
+### 1.5. Replacing default values
+
+- Do not forget to update ***name*** and ***description*** values in ***pom.xml*** to fully customize your project. These values will be reflected in SonarQube reports later.
+
+        <name>My New Project</name>
+        <description>Test Automation - New Project generated from archetype</description>
+
+### 1.6. [Removing unneeded examples, classes and dependencies](RemoveUnneeded.md)
+
+## 2. Cloning the archetype project
+
+Another way of using this archetype is just to clone the project from Bitbucket and make the needed modifications we will detail in the following sections. Please, read them carefully to avoid any unexpected behavior.
+
+### 2.1. Requirements
+
+- [RedHat OpenJDK 1.8.0_2xx](https://developers.redhat.com/products/openjdk/download)
+- [Maven 3.6.x](https://maven.apache.org/download.cgi)
+
+### 2.2. What you need to change
+
+1. Inside ***pom.xml***, replace the original values for ***groupId***, ***artifactId*** and ***version*** by the ones you want to use for your project.
+
+        <groupId>com.adidas</groupId>
+        <artifactId>tpAdidasSerenity</artifactId>
+        <version>1.0</version>
+2. Rename package ***com.adidas.tpAdidasSerenity*** to your chosen artifactId name.
+3. Inside **sonar-project.properties**, replace the original values for ***sonar.projectKey*** and ***sonar.projectName*** by the ones you want to use for your project. To complete SonarQube configuration, please go to [Configure code quality checks for your automation project](03-ConfigureSonarQube.md) section.
+
+        # required metadata
+        sonar.projectKey=com.adidas.tp-adidas-serenity
+        sonar.projectName=TE - adidas Serenity Archetype
+
+### 2.3. [Removing unneeded examples, classes and dependencies](RemoveUnneeded.md)
+
+## 2.4. Test your generated project
+
+Now that you should have your project ready, it's time to check all is working as expected. You will find a guide for this in the [Test the new generated project](02-TestGeneratedProject.md) section.
