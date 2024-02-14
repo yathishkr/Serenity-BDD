@@ -369,6 +369,198 @@ canadaRegion =//input[@value='CANADA']
 loginButton =//*[text()='Log In']//ancestor::button
 authenticateButton =//*[text()='Authenticate']//ancestor::button
 
+JsonFiles:
+DefaultEnabled.json
+[{"fmPosition":"","fm":"Home Delivery","fmStatus":"","sms":[]},{"fmPosition":"","fm":"Click and Collect","fmStatus":"","sms":[]},{"fmPosition":"","fm":"Pick up, drop off","fmStatus":"","sms":[]},{"fmPosition":"","fm":"Digital","fmStatus":"","sms":[]}]
+
+Locales.json
+[
+  {
+    "region": "USA",
+    "market": [
+      {
+        "marketName": "USA",
+        "locale": [
+          "en-US"
+        ]
+      }
+    ]
+  },
+  {
+    "region": "CANADA",
+    "market": [
+      {
+        "marketName": "CANADA",
+        "locale": [
+          "en-CA",
+          "fr-CA"
+        ]
+      }
+    ]
+  },
+  {
+    "region": "WESTERN EUROPE",
+    "market": [
+      {
+        "marketName": "Austria",
+        "locale": [
+          "de-AT"
+        ]
+      },
+      {
+        "marketName": "Belgium",
+        "locale": [
+          "nl-BE",
+          "en-BE",
+          "fr-BE"
+        ]
+      },
+      {
+        "marketName": "Switzerland",
+        "locale": [
+          "en-CH",
+          "fr-CH",
+          "de-CH",
+          "it-CH"
+        ]
+      },
+      {
+        "marketName": "Czechia",
+        "locale": [
+          "cs-CZ"
+        ]
+      },
+      {
+        "marketName": "Germany",
+        "locale": [
+          "en-DE",
+          "de-DE"
+        ]
+      },
+      {
+        "marketName": "Denmark",
+        "locale": [
+          "da-DK"
+        ]
+      },
+      {
+        "marketName": "Spain",
+        "locale": [
+          "es-ES"
+        ]
+      },
+      {
+        "marketName": "Finland",
+        "locale": [
+          "en-FI"
+        ]
+      },
+      {
+        "marketName": "France",
+        "locale": [
+          "fr-FR"
+        ]
+      },
+      {
+        "marketName": "Greece",
+        "locale": [
+          "el-GR"
+        ]
+      },
+      {
+        "marketName": "Ireland",
+        "locale": [
+          "en-IE"
+        ]
+      },
+      {
+        "marketName": "Italy",
+        "locale": [
+          "it-IT"
+        ]
+      },
+      {
+        "marketName": "Netherlands",
+        "locale": [
+          "nl-NL"
+        ]
+      },
+      {
+        "marketName": "Norway",
+        "locale": [
+          "no-NO"
+        ]
+      },
+      {
+        "marketName": "Poland",
+        "locale": [
+          "pl-PL"
+        ]
+      },
+      {
+        "marketName": "Portugal",
+        "locale": [
+          "pt-PT"
+        ]
+      },
+      {
+        "marketName": "Sweden",
+        "locale": [
+          "sv-SE"
+        ]
+      },
+      {
+        "marketName": "Slovakia",
+        "locale": [
+          "sk-SK"
+        ]
+      },
+      {
+        "marketName": "United Kingdom",
+        "locale": [
+          "en-UK"
+        ]
+      },
+      {
+        "marketName": "Adidas-XX",
+        "locale": [
+          "en-XX"
+        ]
+      }
+    ]
+  }
+]
+
+OrderFulfilmentSpec.json
+
+[
+  {
+    "fm":"Home Delivery",
+    "fmPosition":"",
+    "fmStatus":"",
+    "sms":[]
+  },
+  {
+    "fm":"Click and Collect",
+    "fmPosition":"",
+    "fmStatus":"",
+    "sms":[]
+  },
+  {
+    "fm":"Pick up, drop off",
+    "fmPosition":"",
+    "fmStatus":"",
+    "sms":[]
+  },
+  {
+    "fm":"Digital",
+    "fmPosition":"",
+    "fmStatus":"",
+    "sms":[]
+  }
+]
+
+
 
 features:
 
@@ -8121,6 +8313,22 @@ Feature: Tax Rates Page Features-Western Europe
       | Belgium | BE           |
 
 
+log4j2.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="error">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+
+
 pom.xml
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -8547,3 +8755,52 @@ pom.xml
 
 
 </project>
+
+
+.gitignore
+
+#IDEs
+.idea/
+.vscode/
+.settings/
+.project
+debug.log
+*.iml
+
+#Java
+.gradle/
+.allure
+target/
+/reportportal.lock
+/reportportal.sync
+.classpath
+.factorypath
+
+.DS_Store
+Chromedriver/
+rerun/
+
+.meta.yml
+
+maintainers:
+- 'PEA.Test_Engineering@adidas.com'
+- 'JoseManuel.Sampayo@adidas.com'
+- 'Liviu.Fodor@adidas.com'
+category: framework
+imageUrl: https://tools.adidas-group.com/bitbucket/projects/TE/repos/te-documentation/raw/poc/images/adi_does_code_source.png?at=refs%2Fheads%2Fmaster
+summary: adidas Test Automation framework - Maven archetype
+keywords:
+  - platform-pinned
+  - serenity-bdd
+  - cucumber
+  - java
+  - maven
+  - selenium
+  - rest-assured
+  - kafka
+
+generate.properties
+
+archetype.encoding=UTF-8
+excludePatterns=**/jenkinsfiles/**,**/target/**,**/.idea/**,*.iml,generate*.properties,sonar-project.properties,RELEASE_NOTES.md,HOWTO.md
+
