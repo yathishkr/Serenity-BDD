@@ -1,0 +1,153 @@
+serenityBrowserStack_Mac_Chrome_1920x1080.properties
+
+#Properties file for executions over BrowserStack.
+#MANDATORY FOR COMPATIBILITY BETWEEN EXECUTIONS PLATFORMS
+#Options: ("selenoid","browserstack","localwebdrivers")
+te.execution.platform=browserstack
+
+# Making links to Jira issue to be displayed on Serenity BDD reports.
+serenity.issue.tracker.url = https://tools.adidas-group.com/jira/browse/{0}
+
+# Appears at the top of the reports
+serenity.project.name = CommerceNext_AdminConsole
+serenity.console.colors = true
+
+# Executing remotely on BrowserStack platform
+webdriver.driver = provided
+webdriver.provided.type = mydriver
+
+#Defining custom BrowserStackSerenityDriver.class as webdriver. In this class you must set BrowserStack credentials and desired capabilities.
+webdriver.provided.mydriver = com.adidas.tpAdidasSerenity.fe.browserstack.BrowserStackSerenityDriver
+serenity.driver.capabilities = mydriver
+
+#MANDATORY Defining BrowserStack credentials
+browserstack.user=rajathshanmugaia_7S2bIx
+browserstack.key=M8MAKsWAVSx3tpFLw1b4
+browserstack.server=hub-cloud.browserstack.com
+
+#MANDATORY Defining BrowserStack capabilities -> https://www.browserstack.com/automate/capabilities
+browserstack.build=CommerceNext_AdminConsole
+browserstack.project=CommerceNext_AdminConsole
+#Browser
+browserstack.browser=Chrome
+browserstack.browser_version=98.0
+browserstack.resolution=1920x1080
+#Platform
+browserstack.os=OS X
+browserstack.os_version=Big Sur
+#Options
+#Screenshots
+browserstack.debug=true
+#To test Internal environments
+browserstack.local=false
+
+#Serenity Options
+# -> http://thucydides.info/docs/serenity-staging/#_serenity_system_properties_and_configuration
+serenity.restart.browser.for.each = feature
+# Screenshots options=(FOR_EACH_ACTION, BEFORE_AND_AFTER_EACH_STEP, FOR_FAILURES, DISABLED)
+# -> http://thucydides.info/docs/serenity-staging/#_configuring_when_screenshots_are_taken
+serenity.take.screenshots=FOR_EACH_ACTION
+
+# Jira Integration
+# serenity.public.url = //buildserver.myorg.com/latest/serenity/report
+# NOTE: set your jira project acronym for jira.project
+# jira.project = TED
+
+# EXAMPLES OF MAVEN COMMANDS:
+# mvn clean test -Dproperties=resources/fe/browserstack/serenityBrowserStack_Mac_Safari_1920x1080.properties -Drp.uuid=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+serenityBrowserStack_Windows_Chrome_1920x1080.properties
+
+#Properties file for executions over BrowserStack.
+#MANDATORY FOR COMPATIBILITY BETWEEN EXECUTIONS PLATFORMS
+#Options: ("selenoid","browserstack","localwebdrivers")
+te.execution.platform=browserstack
+
+# Making links to Jira issue to be displayed on Serenity BDD reports.
+serenity.issue.tracker.url = https://tools.adidas-group.com/jira/browse/{0}
+
+# Appears at the top of the reports
+serenity.project.name = CommerceNext_AdminConsole
+serenity.console.colors = true
+
+#Executing remotely on BrowserStack platform
+webdriver.driver = provided
+webdriver.provided.type = mydriver
+
+#Defining custom BrowserStackSerenityDriver.class as webdriver. In this class you must set BrowserStack credentials and desired capabilities.
+webdriver.provided.mydriver = com.adidas.tpAdidasSerenity.fe.browserstack.BrowserStackSerenityDriver
+serenity.driver.capabilities = mydriver
+
+#MANDATORY Defining BrowserStack credentials
+browserstack.user=yathishkr_xEb7hW
+browserstack.key=MzyFZdsB21U62syuyqn6
+browserstack.server=hub-cloud.browserstack.com
+
+#MANDATORY Defining BrowserStack capabilities -> https://www.browserstack.com/automate/capabilities
+browserstack.build=CommerceNext_AdminConsole
+browserstack.project=CommerceNext_AdminConsole
+#Browser
+browserstack.browser=Chrome
+browserstack.browser_version=116.0
+browserstack.resolution=1920x1080
+#Platform
+browserstack.os=Windows
+browserstack.os_version=10
+#Options
+#Screenshots
+browserstack.debug=true
+#To test Internal environments
+browserstack.local=false
+
+#Serenity Options
+# -> http://thucydides.info/docs/serenity-staging/#_serenity_system_properties_and_configuration
+serenity.restart.browser.for.each = feature
+# Screenshots options=(FOR_EACH_ACTION, BEFORE_AND_AFTER_EACH_STEP, FOR_FAILURES, DISABLED)
+# -> http://thucydides.info/docs/serenity-staging/#_configuring_when_screenshots_are_taken
+serenity.take.screenshots=FOR_EACH_ACTION
+
+# Jira Integration
+# serenity.public.url = //buildserver.myorg.com/latest/serenity/report
+# NOTE: set your jira project acronym for jira.project
+# jira.project = TED
+
+# EXAMPLES OF MAVEN COMMANDS:
+# mvn clean test -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties -Drp.uuid=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+serenityLocalChrome.properties
+
+#Properties file for local executions using standard webdrivers.
+#MANDATORY FOR COMPATIBILITY BETWEEN EXECUTIONS PLATFORMS
+#Options: ("selenoid","browserstack","localwebdrivers")
+te.execution.platform=localwebdrivers
+
+# Making links to Jira issue to be displayed on Serenity BDD reports.
+serenity.issue.tracker.url = https://tools.adidas-group.com/jira/browse/{0}
+
+# Appears at the top of the reports
+serenity.project.name = CommerceNext_AdminConsole
+serenity.console.colors = true
+
+# Executing locally
+#Options: ("chrome","firefox","iexplorer")
+webdriver.driver = chrome
+chrome.switches = --start-maximized --remote-allow-origins=*
+
+#Web driver paths
+webdriver.chrome.driver = ./Chromedriver/chromedriver.exe
+
+#Serenity Options
+# -> http://thucydides.info/docs/serenity-staging/#_serenity_system_properties_and_configuration
+serenity.restart.browser.for.each = feature
+# Screenshots options=(FOR_EACH_ACTION, BEFORE_AND_AFTER_EACH_STEP, FOR_FAILURES, DISABLED)
+# -> http://thucydides.info/docs/serenity-staging/#_configuring_when_screenshots_are_taken
+serenity.take.screenshots=FOR_EACH_ACTION
+
+# Jira Integration
+# serenity.public.url = //buildserver.myorg.com/latest/serenity/report
+# NOTE: set your jira project acronym for jira.project
+# jira.project = TED
+
+# EXAMPLES OF MAVEN COMMANDS:
+# mvn clean test -Dproperties=resources/fe/localwebdrivers/serenityLocalChrome.properties
+
