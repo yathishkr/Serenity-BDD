@@ -1,0 +1,571 @@
+01-SERENITY-TestPlan-FE-BrowserStack.groovy
+
+#!groovy file
+
+// Jenkins config ---------------------------------------------------{
+final def testNode = "${env.NODE}"//DO NOT MODIFY
+
+// GIT config -------------------------------------------------------{
+final def gitRepo = "https://tools.adidas-group.com/bitbucket/scm/comnext/admin-console-component-fe-tests.git" //UPDATE ACCORDING TO YOUR NEEDS
+final def gitBranch = "${env.BRANCH_NAME}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+// Test Pipeline config
+def projectName = "CommerceNext_AdminConsole" //UPDATE ACCORDING TO YOUR NEEDS
+//def rpUrl = "https://testreportingportal.tools.3stripes.net" //DO NOT MODIFY
+//def rpCredentials = "test-reporting-portal-pea-test_engineering"//UPDATE ACCORDING TO YOUR NEEDS
+def testPlan = "${env.TEST_PLAN}" //UPDATE ACCORDING TO YOUR NEEDS
+//def credentials = "bitbucket_svc_commerce.next" //UPDATE ACCORDING TO YOUR NEEDS
+def credentials = "adidas__svc_ComN"
+def bitbucketCredentials = "bitbucket_svc_commerce.next"
+def cucumberResultsFile = "cucumber-results.json" //DO NOT MODIFY
+def cucumberResultsDir = "target/results" //DO NOT MODIFY
+def jiraEnvironment = "STAG" //UPDATE ACCORDING TO YOUR NEEDS
+def jiraSummary = "Test Plan $testPlan execution" //UPDATE ACCORDING TO YOUR NEEDS
+final def tag = "${env.TAG}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+//email
+def emailAddress = "adidasEmailId" //UPDATE ACCORDING TO YOUR NEEDS
+
+final def xrayExportFeaturesUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/export/test?keys=" //DO NOT MODIFY
+final def featuresUrl = xrayExportFeaturesUrl + testPlan //DO NOT MODIFY
+final def featuresDirJenkins = "src/test/resources/features/jenkins" //DO NOT MODIFY
+final def outputFile = "features.zip" //DO NOT MODIFY
+final def xrayImportUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/import/execution/cucumber" //DO NOT MODIFY
+final def xrayImportHeader = "-H 'Content-Type: application/json' -H 'Cache-Control: no-cache'" //DO NOT MODIFY
+final def xrayImportData = "@target/cucumber-report.json" //DO NOT MODIFY
+final def xrayImportOutput = "target/xray-response.json"    //DO NOT MODIFY
+
+
+//Sonar information
+final def sonarPropertiesDir = "" //UPDATE ACCORDING TO YOUR NEEDS. If you will not use sonar, write <<final def sonarPropertiesDir = "">>
+
+//def reportingPortalReport = "" //DO NOT MODIFY
+
+@Library(["GlobalJenkinsLibrary@master", "TaaSWrapper@2.0.0"]) _
+
+//Pipeline
+node(testNode) {
+    try {
+        currentBuild.result = "SUCCESS"
+
+        stage("Pulling Automation Code") {
+            checkout scm
+        }
+
+        /*stage("Checking Code Quality") {
+            withSonarQubeEnv('PROD') {
+                tools.maven.run(
+                        goal: "clean sonar:sonar -Dsonar.branch='${gitBranch}'"
+                )
+            }
+        }*/
+
+        stage("Pulling Cucumber Features") {
+            flows.xray.getFeatures(featureDir: featuresDirJenkins,
+                    credentials: credentials,
+                    outputFile: outputFile,
+                    url: featuresUrl)
+        }
+
+        stage("Executing Test Scenarios") {
+            try {
+                //withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+
+                if(tag.isEmpty())
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate \
+                                     -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties \
+                                     -Dcucumber.features='${featuresDirJenkins}' "
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+                else
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate" +
+                                    " -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties" +
+                                    " -Dcucumber.features='${featuresDirJenkins}'" +
+                                    " -Dtags='${tag}'"
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Publishing Reports") {
+            try {
+                report.serenity()
+                report.cucumber()
+              /*  withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+                    reportingPortalReport = report.linkToRp([projectName: projectName, rpToken: token, rpUrl: rpUrl])
+                }*/
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Exporting Test Results") {
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+                sh "curl -X POST $xrayImportUrl $xrayImportHeader -u '${USERPASS}' -d $xrayImportData -o $xrayImportOutput"
+            }
+            //Getting created execution key
+            def props = readJSON file: xrayImportOutput
+            def executionKey = props.testExecIssue.key
+            echo '[Xray] Test Execution created succesfully: ' + executionKey
+            //Linking test execution to test plan
+            //Creating json data for Xray
+            sh "echo '{\"add\": [\"$executionKey\"]}' > target/data.json"
+
+
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+               //Linking Test Plan and Test Execution
+                def url = 'https://jira.tools.3stripes.net/rest/raven/1.0/api/testplan/' + testPlan + '/testexecution'
+                def data = '@target/data.json'
+                sh "curl -X POST $url $xrayImportHeader -u '${USERPASS}' -d $data"
+                //Editing Test Execution attributes example
+                def urlExecution = 'https://jira.tools.3stripes.net/rest/api/2/issue/' + executionKey
+                sh "curl -X PUT $urlExecution $xrayImportHeader -u '${USERPASS}' -d \"{ \\\"fields\\\": { \\\"customfield_11405\\\":[\\\"$jiraEnvironment\\\"] , \\\"summary\\\":\\\"$jiraSummary\\\"}}\""
+            }
+
+        }
+
+        /*stage("Sending Notifications") {
+            try {
+                String fails
+                String linkElements = ""
+                String[] fileContents = [readFile('target/cucumber-report.json')]
+                def reportInfo = reportAnalyzer.recordReportInfo(fileContents)
+                Map links
+
+                links = ["SERENITY": BUILD_URL + "Serenity_20BDD_20Report", "CUCUMBER": BUILD_URL + "cucumber-html-reports", "JIRA": meta.constants.JIRA_URL + "/browse/" + testPlan, "RPLAUNCH": reportingPortalReport]
+                if (!sonarPropertiesDir.isEmpty()) links.put("SONAR", meta.constants.SONAR_URL + "/dashboard?id=" + reportAnalyzer.getSonarProject(sonarPropertiesDir) + "%3A" + gitBranch)
+                links.each({ link ->
+                    linkElements += "<a href=\"" + link.value + "\">" + link.key + "</a></BR>"
+                })
+
+                fails = reportAnalyzer.failsTable(reportInfo.getFailedTests())
+                echo 'fails'
+
+                String statusCount = reportAnalyzer.getPassedFailedSkipped(reportInfo.getStatusMap())
+
+                emailext body: reportAnalyzer.getMailNotificationBody(linkElements, statusCount, fails),
+                        subject: 'Test Subject',
+                        to: emailAddress,
+                        mimeType: 'text/html'
+
+                // Set your MS Teams webhook URL as a Text Secret in Jenkins
+                notifications.msteams.send credentials: 'ms-teams-webhook-uri',
+                        message: '**Test Automation job completed.**</BR>' + linkElements + '</BR>' + statusCount + '</BR>' + fails + '</BR>',
+                        level: 'good'
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+*/
+    } catch (error) {
+        echo "Caught: " + error
+        currentBuild.result = "FAILURE"
+    }
+}
+
+
+05-SERENITY-TestPlan-FE-Parallel-Surefire.groovy
+
+#!groovy file
+
+// Jenkins config ---------------------------------------------------{
+final def testNode = "${env.NODE}"//DO NOT MODIFY
+
+// GIT config -------------------------------------------------------{
+final def gitRepo = "https://tools.adidas-group.com/bitbucket/scm/comnext/admin-console-component-fe-tests.git" //UPDATE ACCORDING TO YOUR NEEDS
+final def gitBranch = "${env.BRANCH_NAME}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+// Test Pipeline config
+def projectName = "CommerceNext_AdminConsole" //UPDATE ACCORDING TO YOUR NEEDS
+//def rpUrl = "https://testreportingportal.tools.3stripes.net" //DO NOT MODIFY
+//def rpCredentials = "test-reporting-portal-pea-test_engineering"//UPDATE ACCORDING TO YOUR NEEDS
+def testPlan = "${env.TEST_PLAN}" //UPDATE ACCORDING TO YOUR NEEDS
+//def credentials = "bitbucket_svc_commerce.next" //UPDATE ACCORDING TO YOUR NEEDS
+def credentials = "adidas__svc_ComN"
+def bitbucketCredentials = "bitbucket_svc_commerce.next"
+def cucumberResultsFile = "cucumber-results.json" //DO NOT MODIFY
+def cucumberResultsDir = "target/results" //DO NOT MODIFY
+def jiraEnvironment = "STAG" //UPDATE ACCORDING TO YOUR NEEDS
+def jiraSummary = "Test Plan $testPlan execution" //UPDATE ACCORDING TO YOUR NEEDS
+final def tag = "${env.TAG}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+//email
+def emailAddress = "adidasEmailId" //UPDATE ACCORDING TO YOUR NEEDS
+
+final def xrayExportFeaturesUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/export/test?keys=" //DO NOT MODIFY
+final def featuresUrl = xrayExportFeaturesUrl + testPlan //DO NOT MODIFY
+final def featuresDirJenkins = "src/test/resources/features/jenkins" //DO NOT MODIFY
+final def outputFile = "features.zip" //DO NOT MODIFY
+final def xrayImportUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/import/execution/cucumber" //DO NOT MODIFY
+final def xrayImportHeader = "-H 'Content-Type: application/json' -H 'Cache-Control: no-cache'" //DO NOT MODIFY
+final def xrayImportData = "@target/cucumber-report.json" //DO NOT MODIFY
+final def xrayImportOutput = "target/xray-response.json"    //DO NOT MODIFY
+
+
+//Sonar information
+final def sonarPropertiesDir = "" //UPDATE ACCORDING TO YOUR NEEDS. If you will not use sonar, write <<final def sonarPropertiesDir = "">>
+
+//def reportingPortalReport = "" //DO NOT MODIFY
+
+@Library(["GlobalJenkinsLibrary@master", "TaaSWrapper@2.0.0"]) _
+
+//Pipeline
+node(testNode) {
+    try {
+        currentBuild.result = "SUCCESS"
+
+        stage("Pulling Automation Code") {
+            checkout scm
+        }
+
+        /*stage("Checking Code Quality") {
+            withSonarQubeEnv('PROD') {
+                tools.maven.run(
+                        goal: "clean sonar:sonar -Dsonar.branch='${gitBranch}'"
+                )
+            }
+        }*/
+
+        stage("Pulling Cucumber Features") {
+            flows.xray.getFeatures(featureDir: featuresDirJenkins,
+                    credentials: credentials,
+                    outputFile: outputFile,
+                    url: featuresUrl)
+        }
+
+        stage("Executing Test Scenarios") {
+            try {
+                //withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+
+                if(tag.isEmpty())
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate \
+                                     -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties \
+                                     -Dcucumber.features='${featuresDirJenkins}' "
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+                else
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate" +
+                                    " -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties" +
+                                    " -Dcucumber.features='${featuresDirJenkins}'" +
+                                    " -Dtags='${tag}'"
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Publishing Reports") {
+            try {
+                report.serenity()
+                report.cucumber()
+              /*  withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+                    reportingPortalReport = report.linkToRp([projectName: projectName, rpToken: token, rpUrl: rpUrl])
+                }*/
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Exporting Test Results") {
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+                sh "curl -X POST $xrayImportUrl $xrayImportHeader -u '${USERPASS}' -d $xrayImportData -o $xrayImportOutput"
+            }
+            //Getting created execution key
+            def props = readJSON file: xrayImportOutput
+            def executionKey = props.testExecIssue.key
+            echo '[Xray] Test Execution created succesfully: ' + executionKey
+            //Linking test execution to test plan
+            //Creating json data for Xray
+            sh "echo '{\"add\": [\"$executionKey\"]}' > target/data.json"
+
+
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+               //Linking Test Plan and Test Execution
+                def url = 'https://jira.tools.3stripes.net/rest/raven/1.0/api/testplan/' + testPlan + '/testexecution'
+                def data = '@target/data.json'
+                sh "curl -X POST $url $xrayImportHeader -u '${USERPASS}' -d $data"
+                //Editing Test Execution attributes example
+                def urlExecution = 'https://jira.tools.3stripes.net/rest/api/2/issue/' + executionKey
+                sh "curl -X PUT $urlExecution $xrayImportHeader -u '${USERPASS}' -d \"{ \\\"fields\\\": { \\\"customfield_11405\\\":[\\\"$jiraEnvironment\\\"] , \\\"summary\\\":\\\"$jiraSummary\\\"}}\""
+            }
+
+        }
+
+        /*stage("Sending Notifications") {
+            try {
+                String fails
+                String linkElements = ""
+                String[] fileContents = [readFile('target/cucumber-report.json')]
+                def reportInfo = reportAnalyzer.recordReportInfo(fileContents)
+                Map links
+
+                links = ["SERENITY": BUILD_URL + "Serenity_20BDD_20Report", "CUCUMBER": BUILD_URL + "cucumber-html-reports", "JIRA": meta.constants.JIRA_URL + "/browse/" + testPlan, "RPLAUNCH": reportingPortalReport]
+                if (!sonarPropertiesDir.isEmpty()) links.put("SONAR", meta.constants.SONAR_URL + "/dashboard?id=" + reportAnalyzer.getSonarProject(sonarPropertiesDir) + "%3A" + gitBranch)
+                links.each({ link ->
+                    linkElements += "<a href=\"" + link.value + "\">" + link.key + "</a></BR>"
+                })
+
+                fails = reportAnalyzer.failsTable(reportInfo.getFailedTests())
+                echo 'fails'
+
+                String statusCount = reportAnalyzer.getPassedFailedSkipped(reportInfo.getStatusMap())
+
+                emailext body: reportAnalyzer.getMailNotificationBody(linkElements, statusCount, fails),
+                        subject: 'Test Subject',
+                        to: emailAddress,
+                        mimeType: 'text/html'
+
+                // Set your MS Teams webhook URL as a Text Secret in Jenkins
+                notifications.msteams.send credentials: 'ms-teams-webhook-uri',
+                        message: '**Test Automation job completed.**</BR>' + linkElements + '</BR>' + statusCount + '</BR>' + fails + '</BR>',
+                        level: 'good'
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+*/
+    } catch (error) {
+        echo "Caught: " + error
+        currentBuild.result = "FAILURE"
+    }
+}
+
+
+11-SERENITY-ReRunFailures.groovy
+
+#!groovy file
+
+// Jenkins config ---------------------------------------------------{
+final def testNode = "${env.NODE}"//DO NOT MODIFY
+
+// GIT config -------------------------------------------------------{
+final def gitRepo = "https://tools.adidas-group.com/bitbucket/scm/comnext/admin-console-component-fe-tests.git" //UPDATE ACCORDING TO YOUR NEEDS
+final def gitBranch = "${env.BRANCH_NAME}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+// Test Pipeline config
+def projectName = "CommerceNext_AdminConsole" //UPDATE ACCORDING TO YOUR NEEDS
+//def rpUrl = "https://testreportingportal.tools.3stripes.net" //DO NOT MODIFY
+//def rpCredentials = "test-reporting-portal-pea-test_engineering"//UPDATE ACCORDING TO YOUR NEEDS
+def testPlan = "${env.TEST_PLAN}" //UPDATE ACCORDING TO YOUR NEEDS
+//def credentials = "bitbucket_svc_commerce.next" //UPDATE ACCORDING TO YOUR NEEDS
+def credentials = "adidas__svc_ComN"
+def bitbucketCredentials = "bitbucket_svc_commerce.next"
+def cucumberResultsFile = "cucumber-results.json" //DO NOT MODIFY
+def cucumberResultsDir = "target/results" //DO NOT MODIFY
+def jiraEnvironment = "STAG" //UPDATE ACCORDING TO YOUR NEEDS
+def jiraSummary = "Test Plan $testPlan execution" //UPDATE ACCORDING TO YOUR NEEDS
+final def tag = "${env.TAG}" //UPDATE ACCORDING TO YOUR NEEDS
+
+
+//email
+def emailAddress = "adidasEmailId" //UPDATE ACCORDING TO YOUR NEEDS
+
+final def xrayExportFeaturesUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/export/test?keys=" //DO NOT MODIFY
+final def featuresUrl = xrayExportFeaturesUrl + testPlan //DO NOT MODIFY
+final def featuresDirJenkins = "src/test/resources/features/jenkins" //DO NOT MODIFY
+final def outputFile = "features.zip" //DO NOT MODIFY
+final def xrayImportUrl = "https://jira.tools.3stripes.net/rest/raven/1.0/import/execution/cucumber" //DO NOT MODIFY
+final def xrayImportHeader = "-H 'Content-Type: application/json' -H 'Cache-Control: no-cache'" //DO NOT MODIFY
+final def xrayImportData = "@target/cucumber-report.json" //DO NOT MODIFY
+final def xrayImportOutput = "target/xray-response.json"    //DO NOT MODIFY
+
+
+//Sonar information
+final def sonarPropertiesDir = "" //UPDATE ACCORDING TO YOUR NEEDS. If you will not use sonar, write <<final def sonarPropertiesDir = "">>
+
+//def reportingPortalReport = "" //DO NOT MODIFY
+
+@Library(["GlobalJenkinsLibrary@master", "TaaSWrapper@2.0.0"]) _
+
+//Pipeline
+node(testNode) {
+    try {
+        currentBuild.result = "SUCCESS"
+
+        stage("Pulling Automation Code") {
+            checkout scm
+        }
+
+        /*stage("Checking Code Quality") {
+            withSonarQubeEnv('PROD') {
+                tools.maven.run(
+                        goal: "clean sonar:sonar -Dsonar.branch='${gitBranch}'"
+                )
+            }
+        }*/
+
+        stage("Pulling Cucumber Features") {
+            flows.xray.getFeatures(featureDir: featuresDirJenkins,
+                    credentials: credentials,
+                    outputFile: outputFile,
+                    url: featuresUrl)
+        }
+
+        stage("Executing Test Scenarios") {
+            try {
+                //withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+
+                if(tag.isEmpty())
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate \
+                                     -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties \
+                                     -Dcucumber.features='${featuresDirJenkins}' "
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+                else
+                {
+                    tools.maven.run(
+                            goal: "clean test serenity:aggregate" +
+                                    " -Dproperties=resources/fe/browserstack/serenityBrowserStack_Windows_Chrome_1920x1080.properties" +
+                                    " -Dcucumber.features='${featuresDirJenkins}'" +
+                                    " -Dtags='${tag}'"
+                            /* \
+                                            -Drp.uuid='${token}' \
+                                            -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                            -Drp.enable='true'\
+                                            -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'*/
+                    )
+                    // }
+                }
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Publishing Reports") {
+            try {
+                report.serenity()
+                report.cucumber()
+              /*  withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+                    reportingPortalReport = report.linkToRp([projectName: projectName, rpToken: token, rpUrl: rpUrl])
+                }*/
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Exporting Test Results") {
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+                sh "curl -X POST $xrayImportUrl $xrayImportHeader -u '${USERPASS}' -d $xrayImportData -o $xrayImportOutput"
+            }
+            //Getting created execution key
+            def props = readJSON file: xrayImportOutput
+            def executionKey = props.testExecIssue.key
+            echo '[Xray] Test Execution created succesfully: ' + executionKey
+            //Linking test execution to test plan
+            //Creating json data for Xray
+            sh "echo '{\"add\": [\"$executionKey\"]}' > target/data.json"
+
+
+            withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+               //Linking Test Plan and Test Execution
+                def url = 'https://jira.tools.3stripes.net/rest/raven/1.0/api/testplan/' + testPlan + '/testexecution'
+                def data = '@target/data.json'
+                sh "curl -X POST $url $xrayImportHeader -u '${USERPASS}' -d $data"
+                //Editing Test Execution attributes example
+                def urlExecution = 'https://jira.tools.3stripes.net/rest/api/2/issue/' + executionKey
+                sh "curl -X PUT $urlExecution $xrayImportHeader -u '${USERPASS}' -d \"{ \\\"fields\\\": { \\\"customfield_11405\\\":[\\\"$jiraEnvironment\\\"] , \\\"summary\\\":\\\"$jiraSummary\\\"}}\""
+            }
+
+        }
+
+        /*stage("Sending Notifications") {
+            try {
+                String fails
+                String linkElements = ""
+                String[] fileContents = [readFile('target/cucumber-report.json')]
+                def reportInfo = reportAnalyzer.recordReportInfo(fileContents)
+                Map links
+
+                links = ["SERENITY": BUILD_URL + "Serenity_20BDD_20Report", "CUCUMBER": BUILD_URL + "cucumber-html-reports", "JIRA": meta.constants.JIRA_URL + "/browse/" + testPlan, "RPLAUNCH": reportingPortalReport]
+                if (!sonarPropertiesDir.isEmpty()) links.put("SONAR", meta.constants.SONAR_URL + "/dashboard?id=" + reportAnalyzer.getSonarProject(sonarPropertiesDir) + "%3A" + gitBranch)
+                links.each({ link ->
+                    linkElements += "<a href=\"" + link.value + "\">" + link.key + "</a></BR>"
+                })
+
+                fails = reportAnalyzer.failsTable(reportInfo.getFailedTests())
+                echo 'fails'
+
+                String statusCount = reportAnalyzer.getPassedFailedSkipped(reportInfo.getStatusMap())
+
+                emailext body: reportAnalyzer.getMailNotificationBody(linkElements, statusCount, fails),
+                        subject: 'Test Subject',
+                        to: emailAddress,
+                        mimeType: 'text/html'
+
+                // Set your MS Teams webhook URL as a Text Secret in Jenkins
+                notifications.msteams.send credentials: 'ms-teams-webhook-uri',
+                        message: '**Test Automation job completed.**</BR>' + linkElements + '</BR>' + statusCount + '</BR>' + fails + '</BR>',
+                        level: 'good'
+
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+*/
+    } catch (error) {
+        echo "Caught: " + error
+        currentBuild.result = "FAILURE"
+    }
+}
