@@ -1,0 +1,797 @@
+1. Create a new project from scratch
+Introduction
+There are two main options available for you to create a new automation project based on this archetype.
+
+(RECOMMENDED) Generate a clean and customized project from the Maven archetype.
+(NOT RECOMMENDED) Clone the archetype repository and make the needed modifications for your project to work.
+If you generate a clean project, you will end up with fully functional test automation project. In this section, we will explain how to do this step by step and the actions needed to build complete CICD in Test pipelines.
+
+If you clone the project directly, you will have to make some changes to existing files, renaming some parameters and modifying some configurations. We will also explain in detail which changes are required for you to have it fully customized and running without issues.
+
+We recommend you to use the first option, as we will focus our efforts in next releases on evolving the archetype, to make it more flexible (regarding dependencies adapated to your needs) and easier to set up.
+
+1. Generating a clean project from Maven Archetype
+1.1. Requirements
+OpenJDK 1.8.x
+
+For Windows, RedHat OpenJDK 1.8.0_2xx is the recommended version to use at adidas.
+
+For MacOS, any OpenJDK 1.8.x package will do the job. If you don't have any installed, AdoptOpenJDK is really easy to install using brew.
+
+  $ brew tap AdoptOpenJDK/openjdk
+  $ brew install --cask adoptopenjdk8
+Maven 3.6.x
+
+1.2. Configuring Maven
+We need to configure adidas Artifactory repository in order to make Maven find our tpAdidasSerenity-archetype.
+
+Locate settings.xml file inside conf folder in your Maven installation path.
+Edit settings.xml file adding the following:
+Add a new profile inside profiles section:
+
+<profile>
+    <id>adidaspea</id>
+    <repositories>
+        <repository>
+            <id>adidas-artifactory</id>
+            <name>adidas Artifactory</name>
+            <url>https://tools.adidas-group.com/artifactory/pea</url>
+        </repository>
+    </repositories>
+</profile>
+Add the following lines inside settings section to activate the profile you just added:
+
+<activeProfiles>
+    <activeProfile>adidaspea</activeProfile>
+</activeProfiles>
+Save your changes. Now we are ready to generate a new project from the archetype located in our adidas Artifactory repository.
+1.3. Generating the project from IntelliJ
+Go to File menu and click on Create - New - Project.
+
+Check Create from archetype option.
+
+Click on Add Archetype and fill in the following fields:
+
+GroupId: com.adidas
+ArtifactId: tpAdidasSerenity-archetype
+Version: 21.03.1 (or latest available, you can check on adidas Artifactory the versions available).
+Artifactory
+
+Create new project 01
+
+Click OK and the new defined archetype will be added to list of available ones.
+Select the newly added archetype and click on Next.
+Create new project 02
+
+Name your automation project.
+Type your groupId.
+Type the version that will be for you the first.
+Click on Next.
+Create new project 03
+
+IMPORTANT! We have to override our user settings files and local repository in order to allow Maven to find our archetype in adidas Artifactory.
+Check Override on both settings and type the path to your Maven installation configuration folder.
+Click on Finish.
+Create new project 04
+
+Done! If all OK, archetype will be downloaded from adidas Artifactory and a new project will be created. You now have a fully functional Test Automation solution ready to use.
+Create new project 05
+
+1.4. Generating the project from command line
+IMPORTANT! Step 1.2 (Maven configuration) must be completed in order to allow adidas Repository to be found.
+
+Go to the root folder you want your new project to be generated.
+
+Execute the following command modifying the values of the parameters -DgroupId, -DartifactId and -Dversion per your convenience.
+
+mvn archetype:generate -DarchetypeGroupId='com.adidas' -DarchetypeArtifactId='tpAdidasSerenity-archetype' -DarchetypeVersion='21.03.1' -DgroupId='com.adidas' -DartifactId='myProject' -Dversion='0.0.1'
+
+Done! If all OK, archetype will be downloaded from adidas Artifactory and a new project will be created. You now have a fully functional Test Automation solution ready to use.
+
+Create new project  Powershell
+
+1.5. Replacing default values
+Do not forget to update name and description values in pom.xml to fully customize your project. These values will be reflected in SonarQube reports later.
+
+  <name>My New Project</name>
+  <description>Test Automation - New Project generated from archetype</description>
+1.6. Removing unneeded examples, classes and dependencies
+2. Cloning the archetype project
+Another way of using this archetype is just to clone the project from Bitbucket and make the needed modifications we will detail in the following sections. Please, read them carefully to avoid any unexpected behavior.
+
+2.1. Requirements
+RedHat OpenJDK 1.8.0_2xx
+Maven 3.6.x
+2.2. What you need to change
+Inside pom.xml, replace the original values for groupId, artifactId and version by the ones you want to use for your project.
+
+ <groupId>com.adidas</groupId>
+ <artifactId>tpAdidasSerenity</artifactId>
+ <version>1.0</version>
+Rename package com.adidas.tpAdidasSerenity to your chosen artifactId name.
+
+Inside sonar-project.properties, replace the original values for sonar.projectKey and sonar.projectName by the ones you want to use for your project. To complete SonarQube configuration, please go to Configure code quality checks for your automation project section.
+
+ # required metadata
+ sonar.projectKey=com.adidas.tp-adidas-serenity
+ sonar.projectName=TE - adidas Serenity Archetype
+2.3. Removing unneeded examples, classes and dependencies
+2.4. Test your generated project
+Now that you should have your project ready, it's time to check all is working as expected. You will find a guide for this in the Test the new generated project section.
+
+2. Test the new generated project
+To test your new generated project, execute this command:
+
+mvn clean test serenity:aggregate -Dproperties=resources/fe/selenoid/remote/serenitySelenoid_Chrome_1920x1080.properties
+Maven clean goal will recreate target folder and any previously generated artifact.
+Maven test goal will execute existing test scenarios.
+Serinity plugin serenity:aggregate will generate Serenity BDD reports so we will be able to check that the plugin is properly installed and test reports are generated properly.
+Finally, by setting -Dproperties= parameter we will define which webdriver and execution platform we will be using for FE scenarios execution. In this case, we will be using adidas Selenoid platform, so ensure you are connected to our internal network in order not to get connectivity errors. You can check the properties we will be using for this first check here. You can know about all the different execution options available in Execute your tests over our different available platforms and options section.
+Checks
+Execution
+Maven command must run and the test scenarios should start to be executed.
+
+Test suites may contained Failed test cases. Currently, we know some of the Yarn scenarios randomly fail and we are working on fixing the issues and stabilize them.
+
+Maven command final result must be a BUILD SUCCESS message.
+
+You must see a summary of the Serenity tests with totals and execution time data.
+
+Test generated project  Execution summary
+
+Reporting
+Go to target folder and check that cucumber-report.json file has been generated and contains test results data. Test generated project  Cucumber reports
+
+Go to target folder and check that site/serenity folder exists and proper Serenity BDD HTML report has been generated. Test generated project  Serenity reports
+
+Open Serenity BDD HTML report on a web browser and check:
+
+API Test reports contain request/response information. Test generated project  Serenity reports
+FE Test reports contain screenshots. Test generated project  Serenity reports
+If no issues with these checks, nice! It seems everything is working fine and you are ready for the next steps.
+
+Let's start by configuring SonarQube analysis to implement from the very beginning good code quality practices: Configure code quality checks for your automation project.
+
+3. Configure code quality checks for your automation project
+How to check Code Quality locally
+Configure SonarQube plugin in your Maven configuration file $MAVEN_HOME/conf/settings.xml adding the following plugin group.
+
+ <pluginGroups>
+     <pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
+ </pluginGroups>
+In the same $MAVEN_HOME/conf/settings.xml, add a new profile to configure adidas SonarQube server URL:
+
+ <profiles>
+     <profile>
+         <id>sonar</id>
+         <activation>
+             <activeByDefault>true</activeByDefault>
+         </activation>
+         <properties>
+             <sonar.host.url>
+               https://tools.adidas-group.com/sonar/
+             </sonar.host.url>
+         </properties>
+     </profile>
+ </profiles>
+Save your changes.
+
+Now, go to the new automation project you just generated and fill in the pending values in the file _TODO_sonar-project.properties and rename it to sonar-project.properties.
+
+ # required metadata
+ sonar.projectKey=<your-project-name>
+ sonar.projectName=<Your Project Name>
+Now you can run the following command to run the code analysis scanner over your project and get the code quality reports published on adidas SonarQube server.
+
+ mvn sonar:sonar
+Command must finish without errors with a BUILD SUCCESS message. A link to the generated report will appear after ANALYSIS SUCCESSFUL message.
+
+SonarQube sonar
+
+Clicking on the link, you must be able to see the SonarQube Dasboard for your new project.
+
+SonarQube sonar
+
+How to integrate Code Quality checks in your Jenkins pipelines
+We will explain it more in detail in the section Execute your tests from Jenkins but basically, importing the adidas Global Jenkins Library to your pipeline, this code snippet will make the analysis to be executed and reports being publish in your Jenkins job:
+
+    stage("Checking Code Quality") {
+        withSonarQubeEnv('PROD') {
+            tools.maven.run(
+                    goal: "clean sonar:sonar -Dsonar.branch='master'"
+            )
+        }
+    }
+References
+Sonar scanner for Maven
+
+4. Execute your tests over our different available platforms and options
+4.1 How to generate Serenity BDD reports
+Just add serenity:aggregate as a new goal to the Maven test command. For example:
+
+mvn clean test serenity:aggregate -Dproperties=resources/fe/browserstack/serenityBrowserStack_Chrome_1920x1080.properties
+4.2. Execute features filtered by Cucumber tags
+mvn clean test serenity:aggregate -Dtags=@be
+4.3. Execute a single feature or a feature folder
+To execute a particular feature, add the feature path as option to the execution command:
+
+mvn clean test serenity:aggregate -Dcucumber.features=src/test/resources/features/examples/be/example.feature
+To execute the features in a folder:
+
+mvn clean test serenity:aggregate -Dcucumber.features=src/test/resources/features/examples/be
+4.4. Execute web tests over BrowserStack
+The easiest way to configure the needed options is to use different Serenity properties files as per your desired configuration.
+
+A template indicating the parameters you must customised (including your project details and BrowserStack credentials) has been included in this archetype inside the root folder: _TODO_serenity.properties
+
+Under resources/fe/browserstack, you will find several example properties files that you can use as base to execute your web tests as per your compatibility requirements.
+
+As an example, if you would like to run your fe tests over Chrome, using 1980x1080 as resolution over BrowserStack, you can do that by executing the following command:
+
+mvn clean test serenity:aggregate -Dproperties=resources/fe/browserstack/serenityBrowserStack_Chrome_1920x1080.properties
+IMPORTANT NOTE: please, do not forget to customize this files if used as reference with your own project details and BrowserStack credentials.
+
+HOW TO REQUEST BROWSERSTACK CREDENTIALS: if your team don't have them yet, please contact us through our Microsoft Teams channel SUPPORT_TESTING or via email pea.test_engineering@adidas.com.
+
+4.5. Execute web tests over Selenoid
+Under resources/fe/selenoid, you will find several example properties files that you can use as base to execute your web tests as per your compatibility requirements.
+
+As an example, if you would like to run your fe tests over Chrome, using 1980x1080 as resolution over Selenoid, you can do that by executing the following command:
+
+mvn clean test serenity:aggregate -Dproperties=resources/fe/selenoid/remote/serenitySelenoid_Chrome_1920x1080.properties
+IMPORTANT NOTE: please, do not forget to customize this files if used as reference with your own project details.
+
+4.6. Execute web tests over local webdrivers
+To execute your web tests locally, download and install the desired webdrivers:
+
+Edge edgedriver
+Chrome chromedriver
+Internet Explorer IEDriverServer
+Firefox geckodriver
+IMPORTANT NOTE: You must download and install a webdriver version compatible with the version of your locally installed browser.
+
+Under resources/fe/localwebdrivers, you will find several example properties files that you can use as base to execute your web tests as per your compatibility requirements.
+
+IMPORTANT NOTE: Do not forget to update webdriver paths in the Serenity properties files, pointing to the location of your webdriver executable files.
+
+#Web driver paths
+webdriver.chrome.driver = C:\\tools\\chromedriver.exe
+As an example, if you would like to run your fe tests over your local Chrome installation, you can do that by executing the following command:
+
+mvn clean test serenity:aggregate -Dproperties=resources/fe/loaclwebdrivers/serenityLocalChrome.properties
+4.7. Available configuration options for screenshots
+Configure serenity.take.screenshots property as desired. These are the values you can set in your Serenity properties files (considerer them in order to optimize your executions finding balance between evidences collection and speed):
+
+FOR_EACH_ACTION: Saves a screenshot at every web element action (like click(), typeAndEnter(), type(), typeAndTab() etc.).
+
+BEFORE_AND_AFTER_EACH_STEP: Saves a screenshot before and after every step.
+
+AFTER_EACH_STEP: Saves a screenshot after every step
+
+FOR_FAILURES: Saves screenshots only for failing steps. This can save disk space and speed up the tests a little. It is very useful for data-driven testing.
+
+DISABLED: Doesn’t save screenshots for any steps.
+
+5. Execute your tests from Jenkins
+5.1. Introduction
+In this section we will explain how to integrate your test execution in Jenkins. We won't get into details when explaining Jenkins, Jira or Bitbucket management topics; we assume you have gone through the Engineer Journey and Application Journey, where you can find detailed information about how to get access to adidas tools, request access to existing or request new projects and workspaces, and links to extended documentation about our standard tools. Additionally, this full exercise will be covered during the Onboarding Deep Dive - Test engineering Udemy course.
+
+Specifically, to complete your CICD Test pipelines successfully, you will need:
+
+to have core Jenkins knowledge
+to have core Git/Bitbucket knowledge
+to have core Jira knowledge
+to have admin permissions over your Jenkins folder
+to know how to manage credentials in Jenkins
+to know how to manage libraries in Jenkins
+5.2. Objectives
+In this section, you will see:
+
+Iteration #1
+How to checkout your automation code from Jenkins
+How to execute SonarQube analysis from Jenkins and publish Code Quality reports in the pipeline
+How to execute your test scenarios
+How to publish Cucumber reports
+How to publish Serenity reports
+Iteration #2 (covered inside section 6 Integrate your test automation with TRP)
+Iteration #3 (covered inside section 8 Integrate your test automation with Xray)
+How to execute Test Plans and Test Sets from Jira-Xray
+How to export test results back to Jira-Xray
+Iteration #4 (covered inside section 9 Integrate Microsoft Teams and email notifications)
+How to trigger and configure Microsoft Teams notifications
+How to trigger and configure email notifications
+5.3. Iteration #1
+Reference Code sample
+
+5.3.0. Preliminary steps
+Create a new repository in your Bitbucket project for your test automation project.
+Push your newly created automation project to this repository.
+Create Jenkins credentials for a service account with write access to this Bitbucket repository.
+5.3.1. Creating our first Jenkinsfile
+Create a new empty file in the project root folder named Jenkinsfile
+
+Push the file to your Bitbucket repository.
+
+Create a new pipeline job in your Jenkins folder.
+
+In this job, configure the pipeline section:
+
+Definition: Pipeline script from SCM
+SCM: Git
+Repository URL: (yourRepositoryURL)
+Credentials: (yourServiceAccountCredentials)
+Branch: (yourBranch), by default */master
+Script path: Jenkinsfile
+With this, our Jenkins pipeline should be able to checkout the repository and find our empty jenkinsfile. Let's now start to build our pipeline code.
+
+5.3.2. Variables and configurations
+The first code snippet of our pipeline will be as follows:
+
+#!groovy
+// Jenkins config ---------------------------------------------------{
+final def testNode = "serenity" //DO NOT MODIFY
+
+// GIT config -------------------------------------------------------{
+final def gitRepo = "https://tools.adidas-group.com/bitbucket/scm/te/tp-adidas-serenity-archetype" //UPDATE ACCORDING TO YOUR NEEDS
+final def gitBranch = "master" //UPDATE ACCORDING TO YOUR NEEDS
+The value of the variable testNode, serenity will tell Jenkins which node we want to use for our execution. In adidas Jenkins Central, serenity nodes are fixed agents, our minions, which are configured with all the dependencies needed to execute our standard adidas Testing tools. In JaaS instances, using serenity label, will create a new pod in the Kubernetes cluster based on our minion-acid image, that again, contains all needed tools and dependencies. This pod will be destroyed as soon as the execution is completed.
+Update the variables gitRepo and gitBranch with the your automation project repository URL and desired branch.
+The next section of the code will be as follows:
+
+// Test Pipeline config
+def projectName = "te-tp-adidas-serenity-archetype" //UPDATE ACCORDING TO YOUR NEEDS
+def credentials = "svc_testautomation" //UPDATE ACCORDING TO YOUR NEEDS
+def cucumberResultsFile = "cucumber-results.json" //DO NOT MODIFY
+def cucumberResultsDir = "target/results" //DO NOT MODIFY
+projectName variable will be used by our Selenoid servers (our internal platform for web testing) and/or BrowserStack to identify your executions. Update it to your project name.
+Update the value of the credentials variable with the Jenkins credentials Id of the service account you have configured in Jenkins and provisioned with write access to your Bitbucket repository.
+cucumberResultsFile and cucumberResultsDir are used by the GlobalJenkins library methods to publish Cucumber reports in Jenkins and later to export back the results of your test executions to Jira-Xray. Do not change them unless you have a good reason.
+Next section of the code will configure SonarQube analysis:
+
+//Sonar information
+final def sonarPropertiesDir = "./sonar-project.properties" //UPDATE ACCORDING TO YOUR NEEDS. If you will not use sonar, write <<final def sonarPropertiesDir = "">>
+If you followed section 3 of this guide to Configure code quality checks for your automation project, you won't need to change anything. In case you are using a different naming convention, please update the path to your SonarQube properties file accordingly.
+
+5.3.3. Libraries
+Now, we will add the Global Jenkins Library and our TaasWrapper to our pipeline. This will allow us to use simplified methods in our code and significantly reduced complexity and maintenance effort.
+
+First, you must configure the libraries in Jenkins. You must go to Configure menu inside your Jenkins project folder, adding the libraries in the Pipelines Libraries section. Data you will need:
+
+Library Name: GlobalJenkinsLibrary
+Repository URL: https://tools.adidas-group.com/bitbucket/scm/pabb/jenkins-library.git
+Library Name: TaaSWrapper
+Repository URL: https://tools.adidas-group.com/bitbucket/scm/te/tp-jenkins-wrapper.git
+Once configured, you can import them in your pipeline with this single line:
+
+  @Library(["GlobalJenkinsLibrary@master", "TaaSWrapper@2.0.0"]) _
+5.3.4. Stages
+Let's add now a main try-catch structure to our pipeline:
+
+//Pipeline
+node(testNode) {
+    try {
+        currentBuild.result = "SUCCESS"
+    } catch (error) {
+        echo "Caught: " + error
+        currentBuild.result = "FAILURE"
+    }
+}
+And let's add now the pipeline stages inside the try block:
+
+'//Pipeline
+node(testNode) {
+    try {
+        currentBuild.result = "SUCCESS"
+
+        stage("Pulling Automation Code") {
+            checkout scm
+        }
+
+        stage("Checking Code Quality") {
+            withSonarQubeEnv('PROD') {
+                tools.maven.run(
+                        goal: "clean sonar:sonar -Dsonar.branch='${gitBranch}'"
+                )
+            }
+        }
+
+        stage("Executing Test Scenarios") {
+            try {
+                tools.maven.run(
+                        goal: "clean test serenity:aggregate \
+                        -Dproperties=resources/fe/selenoid/remote/serenitySelenoid_Chrome_1920x1080.properties"
+                )
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+        stage("Publishing Reports") {
+            try {
+                report.serenity()
+                report.cucumber()
+            } catch (Exception e) {
+                echo "Caught: " + e
+                currentBuild.result = "UNSTABLE"
+            }
+        }
+
+    } catch (error) {
+        echo "Caught: " + error
+        currentBuild.result = "FAILURE"
+    }
+}
+That's it! The code of this iteration #1 is completed. Let's go through the stages understanding what is happening in each of them:
+
+currentBuild.result flow:
+
+We are setting the value to SUCCESS with our first line inside try block.
+If any exception happens during our pipeline execution, it will be captured and thrown inside the catch block. currentBuild.result will be then set to FAILURE and the build with be shown in RED in Jenkins.
+But there is a special exception we want to manage differently, that is when a test case fails. If we don't manage the exception, the build will be failed, shown in RED and the next stages (i.e. reporting) will be skipped. We don't want that to happen. We want our test reports, exports and notifications to be triggered with our failed test cases also. That's why inside Executing Test Scenarios stage, we will use another try-catch structure. In case of an exception happening during the test execution, currentBuild.result will be set to UNSTABLE. The pipeline will continue executing next stages and the build will be shown in YELLOW in Jenkins. So, in summary, if you follow the same approach:
+GREEN build means all stages completed successfully and all test cases passed.
+YELLOW build means all stages completed successfully but some test cases were not passed. You should check test reports.
+RED build means pipeline was broken. You should check console logs to see more details about the issue.
+STAGE #1 Pulling Automation Code: this Global Jenkins Library method will checkout your automation code to the Jenkins agent.
+
+  checkout scm
+STAGE #2 Checking Code Quality: this Global Jenkins Library method will execute our Maven goal in the Jenkins agent.
+
+  withSonarQubeEnv('PROD') {
+      tools.maven.run(
+              goal: "clean sonar:sonar -Dsonar.branch='${gitBranch}'"
+      )
+  }
+STAGE #3 Executing Test Scenarios: again, we will use the Global Jenkins Library method to execute the required Maven goals to trigger our Serenity BDD execution.
+
+  try {
+      tools.maven.run(
+              goal: "clean test serenity:aggregate \
+              -Dproperties=resources/fe/selenoid/remote/serenitySelenoid_Chrome_1920x1080.properties"
+      )
+  } catch (Exception e) {
+      echo "Caught: " + e
+      currentBuild.result = "UNSTABLE"
+  }
+STAGE #4 Publishing Reports: in this stage, we will use our TaaS wrapper methods to publish links to both Serenity BDD and Cucumber HTML reports inside our Jenkins build. We also recommend to use a try-catch block here to allow next stages (i.e. exporting results to Jira-Xray, sending notifications...) to be triggered in case of an error during HTML reports generation.
+
+  try {
+      report.serenity()
+      report.cucumber()
+  } catch (Exception e) {
+      echo "Caught: " + e
+      currentBuild.result = "UNSTABLE"
+  }
+5.3.5 Executing and checking
+Now we have our pipeline complete. (Remember that you can check with the Reference Code sample provided that all seems OK).
+
+Save all changes and push the Jenkinsfile to Bitbucket.
+Execute the job previously configured in your Jenkins project.
+What you should get:
+Build result (green or yellow) indicating pipeline execution completed successfully.
+SonarQube results and links to extended reports.
+Cucumber results, trend and link to HTML report.
+Link to Serenity BDD HTML report.
+Jenkins Iteration 1
+
+If all working fine, we can move now to the next iteration of our pipeline, integrating adidas Test Reporting Portal.
+
+6. Integrate adidas Test Reporting Portal
+Introduction
+adidas Test Reporting Portal (TRP) is the centralised reporting engine for our automated test executions. It's the internally deployed ReportPortal.io open-source project.
+
+TRP allows you to keep, analyse and track all the test reports produced during your product lifecycle. It makes revision of the executions quick and simple and provides advanced and powerful dashboarding capabilities.
+
+adidas Test Reporting Portal
+
+5.4. Iteration #2
+Reference Code sample
+
+5.4.0. Preliminary steps
+Check that Iteration #1 pipeline is completed and working properly
+
+You need a project provisioned for you in TRP and the required username and key. If you don't have it yet, check here the instructions about how to get them: Test Reporting Portal documentation.
+
+To send the reports to TRP, you need one user with authorization to the project. It is possible to use a personal account, but we recommend to use a common service account for your team/business area projects.
+
+5.4.1. Get your TRP project configuration setting
+Log-in TRP with your service account and:
+
+Choose the project you want to send your reports to.
+05ExecuteFromJenkinsIteration21
+
+Go to User -> Profile and you will find all the data you will need to configure the integration.
+05ExecuteFromJenkinsIteration21
+
+These data can be pasted on the reportportal.properties file or added as parameters in the run command:
+
+rp.endpoint: Do not modify. We recommend to paste on reportportal.properties as it is not going to change.
+rp.uuid: Do not modify. We recommend to set it on the run command in order to avoid save credentials on bitbucket.
+rp.launch: Modify according to your needs.
+rp.project: Do not modify. We recommend to paste on reportportal.properties as it is not going to change.
+5.4.2. Set rp.uuid in Jenkins as secret
+In your Jenkins project, navigate to the "add credentials" option:
+
+Kind: Choose "Secret text" option.
+Secret: paste rp.uuid value.
+ID: Choose your secret ID.
+Description: Choose a description.
+05ExecuteFromJenkinsIteration23
+
+5.4.3. Add TRP set-up to your pipeline
+Add needed variables
+
+def rpUrl = "https://testreportingportal.tools.3stripes.net"//UPDATE ACCORDING TO YOUR NEEDS
+def rpCredentials = "test-reporting-portal-pea-test_engineering"//UPDATE ACCORDING TO YOUR NEEDS
+
+def reportingPortalReport = "" //DO NOT MODIFY
+Add params needed to your run test command
+
+withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {	//ADD THIS
+    tools.maven.run(
+         goal: "clean test serenity:aggregate \
+         -Dproperties=resources/fe/selenoid/remote/serenitySelenoid_Chrome_1920x1080.properties \
+         -Drp.uuid='${token}' \													//ADD THIS
+         -Drp.description='${JOB_URL}${BUILD_NUMBER}' \     					//ADD THIS
+         -Drp.enable='true'"                                					//ADD THIS
+}																				//ADD THIS
+Add the TRP link generation code to the "Publishing Reports" stage
+
+stage("Publishing Reports") {
+    try {
+        report.serenity()
+        report.cucumber()
+        withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {                          //ADD THIS
+            reportingPortalReport = report.linkToRp([projectName: projectName, rpToken: token, rpUrl: rpUrl]) //ADD THIS
+        }                                                                                                     //ADD THIS
+    } catch (Exception e) {
+        echo "Caught: " + e
+        currentBuild.result = "UNSTABLE"
+    }
+}
+5.4.4. Executing and checking
+Now we have our pipeline completed. (Remember that you can check with the Reference Code sample provided that all seems OK).
+
+Save all changes and push the Jenkinsfile to Bitbucket.
+Execute the job previously configured in your Jenkins project.
+Apart from of the results of Iteration #1, we should get now a link to TRP launch report.
+05ExecuteFromJenkinsIteration24
+
+And, remember you can always check the complete Test Reporting Portal documentation in case of doubts or further information needed.
+
+7. Synchronize your test definitions between Xray and your code
+Introduction
+Since the usage of Xray for test management is mandatory, and most testing teams want to have the test cases in feature files in their testing projects, we run into a problem of duplicated information. To avoid having outdated test cases or scenarios in one of the two sources, we provide two tools, which you can use depending on your needs and the test process your team is following.
+
+7.1. Update your test cases manually (Cucumber Scenarios Comparator tool)
+We provide a tool that automatically spots the differences between the tests in a test plan that you specify and your repository. That way, you can manually decide and update the test case with wrong information.
+
+The archetype provides a working jenkinsfile with this comparation tool. You can also see the tool working in the following Jenkins job.
+
+7.2. Update your test cases automatically (Cucumber Scenarios Updater tool)
+We provide a tool that automatically updates and creates test cases and backgrounds in Xray based on the feature files of you test automation project.
+
+The archetype provides a working jenkinsfile with this updating tool. You can also see the tool working in the following Jenkins job.
+
+Documentation
+If you want to learn more about this tools, please, check the documentation.
+
+8. Integrate your test automation with Xray
+8.0. Introduction
+In this section, we will add integration with Xray Test Management Tool to our pipeline:
+
+We will export selectively Cucumber features from Xray by test, test plan or test set.
+We will import back to Xray the test results after execution to keep full traceability between User Stories, Tests and Test Executions.
+8.1. Considerations
+Until this point, we have been purely dealing with the technical stages, trying to explain how to use this archetype, and how to configure our pipelines to:
+
+Get our code from Bitbucket.
+Check our automation code quality.
+Execute our tests with different options and over different platforms.
+Publish our test reports in Jenkins.
+Integrate our executions into the adidas Test Reporting Portal.
+Now, at this point, is where we are going to integrate the adidas standard Test Process into our Continuous Integration in Test activities.
+
+It's ABSOLUTELY REQUIRED that you KNOW and UNDERSTAND this process. Please read the adidas Testing - Process Guide now if you haven't done it yet.
+
+8.2. Approach
+When developing automation with Serenity BDD and Cucumber, we structure our code in different layers (features/scenarios, test definitions, test steps). Typically, our features will be organized inside /src/test/resources/features, using a tree of subfolders to easily find and maintain them. When executing, we use these subfolders and/or tags to control what will be executed in each run. That is done, technically, adding Cucumber parameters to our mvn test command.
+
+Now, we are going to integrate Xray, and Xray is our Test Management tool. As explained in the adidas Testing - Process Guide, we use Xray:
+
+to define our Tests in Gherkin
+to set and keep traceability between Tests and User Stories
+to organise our Tests into Test Sets and Test Plans to drive our execution plan
+to provide consolidated information about User Stories test activities, test executions and test results
+So, when approaching Xray integration in our pipelines, you have to understand that now, our objective is to execute the test scenarios according to our defined Test Plans in Xray.
+
+8.3. Understanding the pipeline stages
+The code snippets needed to integrate Xray into our Jenkins pipelines are short and simple; but let us explain what is going to happen behind the scenes so you can have full understanding on how we will be isolating features coming from Xray from your existing features folder structure:
+
+We will call Xray API to get only the feature files containing the scenarios we want to execute according to the Test Set or Test Plan defined.
+We will download and uncompress the feature files into the auxiliary folder /src/test/resources/features/jenkins after cleaning it.
+We will execute only the features contained in this folder.
+We will call again Xray API to import back the test results into Jira.
+8.4. Xray integration code
+Reference Code sample
+
+Add the following parameters to your pipeline code:
+
+ // Xray Integration config
+ def testPlan = "TED-4007" //UPDATE ACCORDING TO YOUR NEEDS
+ def jiraSummary = "Test Plan $testPlan execution" //UPDATE ACCORDING TO YOUR NEEDS
+ def jiraEnvironment = "PROD" //UPDATE ACCORDING TO YOUR NEEDS
+ 
+ final def xrayExportFeaturesUrl = "https://tools.adidas-group.com/jira/rest/raven/1.0/export/test?keys=" //DO NOT MODIFY
+ final def featuresUrl = xrayExportFeaturesUrl + testPlan //DO NOT MODIFY
+ final def featuresDirJenkins = "src/test/resources/features/jenkins" //DO NOT MODIFY
+ final def outputFile = "features.zip" //DO NOT MODIFY
+ final def xrayImportUrl = "https://tools.adidas-group.com/jira/rest/raven/1.0/import/execution/cucumber" //DO NOT MODIFY
+ final def xrayImportHeader = "-H 'Content-Type: application/json' -H 'Cache-Control: no-cache'" //DO NOT MODIFY
+ final def xrayImportData = "@target/cucumber-report.json" //DO NOT MODIFY
+ final def xrayImportOutput = "target/xray-response.json" //DO NOT MODIFY
+The first 3 parameters must be updated by you to match:
+
+The Xray Test Plan you want to execute
+The name you want to define for the Test Execution in Xray when results published back
+The environment under test by your execution (will be populated in the corresponding field in the Xray Test Execution)
+The rest of the parameters will be used during the pipeline stages to implement the process described previously in this section.
+
+Add the following stage after checking code quality:
+
+ stage("Pulling Cucumber Features") {
+     flows.xray.getFeatures(featureDir: featuresDirJenkins,
+     credentials: credentials,
+     outputFile: outputFile,
+     url: featuresUrl)
+ }
+This stage will download the features contained in the defined Test Plan and uncompress the files into the auxiliary folder /src/test/resources/features/jenkins.
+
+Modify Executing Test Scenarios stage:
+
+ stage("Executing Test Scenarios") {
+     try {
+         withCredentials([string(credentialsId: rpCredentials, variable: 'token')]) {
+             tools.maven.run(
+                     goal: "clean test serenity:aggregate \
+                                     -Dcucumber.features='${featuresDirJenkins}' \
+                                     -Drp.uuid='${token}' \
+                                     -Drp.description='${JOB_URL}${BUILD_NUMBER}' \
+                                     -Drp.enable='true'\
+                                     -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'"
+             )
+         }
+     } catch (Exception e) {
+         echo "Caught: " + e
+         currentBuild.result = "UNSTABLE"
+     }
+ }
+The changes are just 2:
+
+We configure the run to execute only the features inside /src/test/resources/features/jenkins folder
+
+  -Dcucumber.features='${featuresDirJenkins}'
+We add the Test Plan id to build a proper link in the Test Reporting Portal integration.
+
+  -Drp.attributes='test:${testPlan};branch:${env.BRANCH_NAME}'
+Add Exporting Test Results stage:
+
+ stage("Exporting Test Results") {
+     withCredentials([usernameColonPassword(credentialsId: credentials, variable: "USERPASS")]) {
+         sh "curl -X POST $xrayImportUrl $xrayImportHeader -u $USERPASS -d $xrayImportData -o $xrayImportOutput"
+     }
+     //Getting created execution key
+     def props = readJSON file: xrayImportOutput
+     def executionKey = props.testExecIssue.key
+     echo '[Xray] Test Execution created succesfully: ' + executionKey
+     //Linking test execution to test plan
+     //Creating json data for Xray
+     sh "echo '{\"add\": [\"$executionKey\"]}' > target/data.json"
+
+     withCredentials([usernameColonPassword(credentialsId: credentials, variable: 'USERPASS')]) {
+         //Linking Test Plan and Test Execution
+         def url = 'https://tools.adidas-group.com/jira/rest/raven/1.0/api/testplan/' + testPlan + '/testexecution'
+         def data = '@target/data.json'
+         sh "curl -X POST $url $xrayImportHeader -u $USERPASS -d $data"
+         //Editing Test Execution attributes example
+         def urlExecution = 'https://tools.adidas-group.com/jira/rest/api/2/issue/' + executionKey
+         sh "curl -X PUT $urlExecution $xrayImportHeader -u $USERPASS -d  \"{ \\\"fields\\\": { \\\"customfield_11405\\\":[\\\"$jiraEnvironment\\\"] , \\\"summary\\\":\\\"$jiraSummary\\\"}}\""
+     }
+ }
+Here we are calling again Xray API to export back the test results. There are 2 sequential calls in the code:
+
+Firstly, we are calling the API to send the Cucumber results JSON file. This file contains the results, but also all the Jira IDs and tags. Xray is capable of directly understanding the data; it will create a new issue in Jira (a new Test Execution) and will populate the results in the tests and set all related links. We are saving Xray response in a JSON file to get the ID of this newly created Test Execution.
+Secondly, we are calling Jira API to edit the Test Execution to populate additional details we may require, as name or environment. These fields are just examples. You can use this code as sample to add any additional information to the execution that helps you later to implement your desired test process.
+Reference Code sample
+
+8.5. Executing and checking
+Save all changes and push the Jenkinsfile to Bitbucket.
+
+Execute the job previously configured in your Jenkins project.
+
+Check the build completes without errors. Integrate Xray
+
+Go to your Test Plan in Jira and check:
+
+A new Test Execution has been created.
+The test results are populated inside the Test Execution.
+Name of the Test Execution is the one defined in the pipeline.
+Environment field has been populated.
+Navigate to the test cases and check results and times are properly populated.
+Integrate Xray
+
+9. Sending email and Microsoft Teams notifications
+9.1. Pipeline configuration
+To configure destination email, add this line to your pipeline config section:
+
+  //email
+  def emailAddress = "pea.test_engineering@adidas.com" //UPDATE ACCORDING TO YOUR nEEDS
+To configure Microsoft Teams, you have to add Microsoft Teams webhook as a Text Secret in Jenkins. For the example, we will assume, the name of this secret is ms-teams-webhook-uri.
+
+9.2. Pipeline stage
+The code snippet that will send both email and Microsoft Teams is the following:
+
+stage("Sending Notifications") {
+    try {
+        String fails
+        String linkElements = ""
+        String[] fileContents = [readFile('target/cucumber-report.json')]
+        def reportInfo = reportAnalyzer.recordReportInfo(fileContents)
+        Map links
+
+        links = ["SERENITY": BUILD_URL + "Serenity_20BDD_20Report", "CUCUMBER": BUILD_URL + "cucumber-html-reports", "JIRA": meta.constants.JIRA_URL + "/browse/" + testPlan, "RPLAUNCH": reportingPortalReport]
+        if (!sonarPropertiesDir.isEmpty()) links.put("SONAR", meta.constants.SONAR_URL + "/dashboard?id=" + reportAnalyzer.getSonarProject(sonarPropertiesDir) + "%3A" + gitBranch)
+        links.each({ link ->
+            linkElements += "<a href=\"" + link.value + "\">" + link.key + "</a></BR>"
+        })
+
+        fails = reportAnalyzer.failsTable(reportInfo.getFailedTests())
+        echo 'fails'
+
+        String statusCount = reportAnalyzer.getPassedFailedSkipped(reportInfo.getStatusMap())
+
+        emailext body: reportAnalyzer.getMailNotificationBody(linkElements, statusCount, fails),
+                subject: 'Test Subject',
+                to: emailAddress,
+                mimeType: 'text/html'
+
+        // Set your MS Teams webhook URL as a Text Secret in Jenkins
+        notifications.msteams.send credentials: 'ms-teams-webhook-uri',
+                message: '**Test Automation job completed.**</BR>' + linkElements + '</BR>' + statusCount + '</BR>' + fails + '</BR>',
+                level: 'good'
+
+    } catch (Exception e) {
+        echo "Caught: " + e
+        currentBuild.result = "UNSTABLE"
+    }
+}
+Of course, adapt it to your needs, but by default, this code will send email and Microsoft Teams messages with the following information:
+
+Link to Test Reporting Portal launch
+Link to Serenity BDD report
+Link to SonarQube report
+Summary results (executed, passed, failed, skipped)
+9.3. Executing and checking
+Save all changes and push the Jenkinsfile to Bitbucket.
+
+Execute the job previously configured in your Jenkins project.
+
+Check the build completes without errors. Integrate Notifications
+
+Check your email and configured Microsoft Teams channel:
+
+Check messages were received.
+Check links work and redirect to proper reports.
+Email sample: Integrate Notifications Teams sample: Integrate Notifications
+
+Clean unneeded elements
+Unused files
+This is the list of files and folders that you can safely delete if you don't need them:
+
+/jenkinsfiles/ folder: all the files inside this folder are groovy jenkinsfiles provided as reference samples for you to build your own ones according to your test strategy.
+/README.md and /README/ folder: this is the archetype complete documentation. It will be always available on our Bitbucket project, so you can remove it from your project and use the standard README.md to document your automation project itself.
+/resources/fe/ folder: inside this folder, you will find a set of serenity.properties files provided as samples for all the different execution options available.
+Unused dependencies
+This archetype include the Java dependencies needed to implement tests for fe and be, for most widely used technologies at adidas (as Kafka) and standard tools. You can check, through your IDE tools or SonarQube analysis which ones are not being used in your automation. Just clean pom.xml and classes accordingly.
+
+As a general recommendation, cleaning unused classes and depencies is always a good practice to reduce build and execution times and ease code maintenance. But, of course, do it carefully, always understanding what you are removing in order to avoid undesirable errors and behaviors.
